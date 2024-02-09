@@ -26,7 +26,7 @@ export class AuthService {
       return { name, role, accessToken };
     }
 
-    return { Error: new UnauthorizedException() };
+    return { message: 'Unauthorized', status: 401 };
   }
 
   // async login(user: User) {

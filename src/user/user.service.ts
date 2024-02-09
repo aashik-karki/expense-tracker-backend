@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, Repository, DataSource, IsNull } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -19,28 +19,43 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto): Promise<User> {
+  async createUser(createUserDto: CreateUserDto) {
+    const emailAlreadyExsit = await this.checkIfEmailAlreadyExists(
+      createUserDto.email,
+    );
+    if (emailAlreadyExsit) {
+      return { message: 'Email already Exist', statuscode: 409 };
+    }
+
     const password = createUserDto.password;
+
     const hashPassword = await bcrypt.hash(password, 10);
-    console.log('this is hash password', hashPassword, this.userRepository);
     const user = { ...createUserDto, password: hashPassword };
-    return await this.userRepository.save(user);
+    await this.userRepository.save(user);
+    return { message: 'you have register successfully' };
   }
 
-  findAllUser(): Promise<User[]> {
+  findAllUser() {
     return this.userRepository.find();
   }
 
-  viewUser(id: number): Promise<User> {
-    return this.userRepository.findOneBy({ id });
+  async findUserById(id: number) {
+    const userById = await this.userRepository.findOneBy({ id });
+
+    if (userById === null) {
+      return { message: 'user doesnt exist' };
+    }
+    const { id: Id, name, username, email, role } = userById;
+    return { Id, name, username, email, role };
   }
 
-  // async updateUser(id: number, updateUserDto: UpdateUserDto){
-  //   return await this.userRepository.update(id, updateUserDto);
-  // }
+  async updateUser(id: number, updateUserDto: UpdateUserDto) {
+    return await this.userRepository.update(id, updateUserDto);
+  }
 
-  removeUser(id: number): Promise<{ affected?: number }> {
-    return this.userRepository.delete(id);
+  async DeleteUser(id: number) {
+    const deleteItmes = await this.userRepository.delete(id);
+    console.log('this is a DeletUser', deleteItmes);
   }
 
   public async findMany(
@@ -69,7 +84,15 @@ export class UserService {
     });
   }
 
-  public async findUserByEmail(email: string): Promise<User> {
+  public async findUserByEmail(email: string) {
     return await this.userRepository.findOneBy({ email: ILike(email) });
+  }
+
+  private async checkIfEmailAlreadyExists(email: string) {
+    const Email = await this.findUserByEmail(email);
+
+    if (Email) {
+      return true;
+    }
   }
 }
