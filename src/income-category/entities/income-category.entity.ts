@@ -29,8 +29,6 @@ export class IncomeCategory {
   @DeleteDateColumn()
   deleteAt: Date;
 
-  @OneToMany(() => Income, (income) => income.incomeCategory, {
-    cascade: true,
-  })
+  @OneToMany(() => Income, (income) => income.incomeCategory, { cascade: true })
   income: Income[];
 }

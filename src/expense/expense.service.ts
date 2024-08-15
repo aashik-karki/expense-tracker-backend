@@ -26,6 +26,7 @@ export class ExpenseService {
 
   findOne(id: number) {
     return this.ExpenseRepository.findOneBy({ id });
+
   }
 
   update(id: number, updateExpenseDto: UpdateExpenseDto) {
